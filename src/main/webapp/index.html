@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Files Upload</title>
+    <link href="/ilink/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/ilink/font-awesome/css/font-awesome.css" rel="stylesheet">
+    <link href="/ilink/css/animate.css" rel="stylesheet">
+    <link href="/ilink/css/plugins/dropzone/basic.css" rel="stylesheet">
+    <link href="/ilink/css/plugins/dropzone/dropzone.css" rel="stylesheet">
+    <link href="/ilink/css/style.css" rel="stylesheet">
+    <link href="/ilink/css/plugins/sweetalert/sweetalert.css"
+          rel="stylesheet">
+</head>
+<body style="background:white;">
+<h2>单个文件提交</h2>
+<form action='' enctype="multipart/form-data" method="post" name="fileForm">
+    <table>
+        <tr>
+            <td>文件描述:</td>
+            <td><input type="text" name="description" class="form-control"></td>
+        </tr>
+        <tr>
+            <td>请选择文件:</td>
+            <td><input type="file" name="file" class="form-control"></td>
+        </tr>
+        <tr>
+            <td>
+                <button class="btn btn-primary" onclick="subimtOne()">提交</button>
+            </td>
+        </tr>
+    </table>
+</form>
+
+<br><br>
+
+<h2>多个文件提交</h2>
+<form action='' enctype="multipart/form-data" method="post" name="filesForm">
+    <table>
+        <tr>
+            <td>选择文件:</td>
+            <td><input type="file" name="files" class="form-control"></td>
+        </tr>
+        <tr>
+            <td>选择文件:</td>
+            <td><input type="file" name="files" class="form-control"></td>
+        </tr>
+        <tr>
+            <td>选择文件:</td>
+            <td><input type="file" name="files" class="form-control"></td>
+        </tr>
+        <tr>
+            <td>
+                <button class="btn btn-primary" onclick="subimtMany()">提交</button>
+            </td>
+        </tr>
+    </table>
+</form>
+
+<h2>文件下载</h2>
+测试下载文件：<input type="text" id="filename" class="form-control">
+<button class="btn btn-primary" id="btn-download">下载</button>
+
+<br><br>
+
+<h3 id="process-data"></h3>
+<div class="progress progress-striped">
+    <div id="process" class="progress-bar progress-bar-success" role="progressbar"
+         aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"
+         style="width: 0%;">
+        <span class="sr-only"></span>
+    </div>
+</div>
+<button class="btn btn-primary" onclick="cancleSubmmit()">取消上传</button>
+</body>
+<!-- Mainly scripts -->
+<script src="/ilink/js/jquery-2.1.1.js"></script>
+<script src="/ilink/js/jquery-form.js"></script>
+<script src="/ilink/js/bootstrap.min.js"></script>
+<script src="/ilink/js/plugins/metisMenu/jquery.metisMenu.js"></script>
+<script src="/ilink/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+
+<!-- Custom and plugin javascript -->
+<script src="/ilink/js/inspinia.js"></script>
+<script src="/ilink/js/plugins/pace/pace.min.js"></script>
+
+<!-- DROPZONE -->
+<script src="/ilink/js/plugins/dropzone/dropzone.js"></script>
+<script src="/ilink/js/plugins/sweetalert/sweetalert.min.js"></script>
+<script type="text/javascript">
+
+    var xhr = new XMLHttpRequest();
+    //xhr.upload.onprogress=function(e){}
+
+    var xhrOnProgress = function (fun) {
+        xhrOnProgress.onprogress = fun; //绑定监听
+        //使用闭包实现监听绑
+        return function () {
+            //通过$.ajaxSettings.xhr();获得XMLHttpRequest对象
+            var xhr = $.ajaxSettings.xhr();
+            //判断监听函数是否为函数
+            if (typeof xhrOnProgress.onprogress !== 'function')
+                return xhr;
+            //如果有监听函数并且xhr对象支持绑定时就把监听函数绑定上去
+            if (xhrOnProgress.onprogress && xhr.upload) {
+                xhr.upload.onprogress = xhrOnProgress.onprogress;
+            }
+            return xhr;
+        }
+    }
+
+
+    //上传单个文件
+    function subimtOne() {
+        var form = $("form[name=fileForm]");
+        var options = {
+            url: '/ilink/file/upload', //上传文件的路径
+            type: 'post',
+            xhr: xhrOnProgress(function (e) {
+                var percent = e.loaded / e.total;//计算百分比
+                $("#process-data").html(percent * 100 + '%');
+                var da = (percent * 100) + '%';
+                $("#process").css("width", da);
+            })
+        };
+        form.ajaxSubmit(options);
+    }
+
+    //限制文件类型
+    $(".file").bind("change", function () {
+        var fileType = $(this).val().substring($(this).val().lastIndexOf(".") + 1);
+        if (fileType != "docx" && fileType != "doc") {
+            swal("只能上传docx或doc文件", "上传失败:(", "error");
+        }
+    });
+
+    //多文件上传
+    function subimtMany() {
+        var form = $("form[name=filesForm]");
+        var options = {
+            url: '/ilink/file/filesUpload', //上传文件的路径
+            type: 'post',
+            xhr: xhrOnProgress(function (e) {
+                var percent = e.loaded / e.total;//计算百分比
+                $("#process-data").html(percent * 100 + '%');
+                var da = (percent * 100) + '%';
+                $("#process").css("width", da);
+            })
+        };
+        form.ajaxSubmit(options);
+    }
+
+    $('#btn-download').click(function () {
+        $(location).attr('href', '/ilink/file/down?downfilename='+$('#filename').val());
+        /*alert($('#filename').val());
+        $.ajax({
+            type: 'post',
+            url: "/iLink/file/down",
+            data:{'downfilename':$('#filename').val()} ,
+            cache: false,
+            processData: false,
+            contentType: false,
+            success: function (d) {
+                //var rdata = JSON.parse(d);
+                //alert(d);
+                if (d == "success") {
+                    swal("成功!", "上传成功:)", "success");
+                } else {
+                    swal("失败", "上传失败:(", "error");
+                }
+            }
+        });*/
+
+    });
+
+
+    //中途取消文件上传
+    function cancleSubmmit() {
+        swal({
+            title: "Are you sure?",
+            text: "You will not be able to recover this imaginary file!",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "Yes!",
+            closeOnConfirm: false
+        }, function () {
+            swal("Cancel!", "Your imaginary file has been Canceled.", "success");
+            location.reload();
+        });
+    }
+
+</script>
+</html>
